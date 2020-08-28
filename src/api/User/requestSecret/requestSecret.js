@@ -1,23 +1,29 @@
-import { generateSecret } from "../../../utils";
+import {generateSecret, sendSecretMail} from "../../../utils";
 
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
-
-export default{
-    Mutation:{
-        requestSecret: async(_,args)=>{
-            const{email} = args;
-            const secret = generateSecret();
-            console.log(secret)
-            try{
-                await prisma.user.update({
-                    data:{loginSecret}, 
-                    where: { email } 
-                })
-                return true
-            }catch{
-                return false
-            }
-        }
+export default {
+  Mutation: {
+    requestSecret: async (_, args, {request, prisma}) => {
+      //console.log(request);
+      const {email} = args;
+      const loginSecret = generateSecret();
+      console.log(loginSecret);
+      try {
+        //throw Error();
+        await sendSecretMail(email, loginSecret);
+        await prisma.user.update({
+          data: {
+            loginSecret
+          },
+          where: {
+            email
+          }
+        });
+        return true;
+      }
+      catch(ex) {
+        console.log(ex);
+        return false;
+      }
     }
+  }
 }

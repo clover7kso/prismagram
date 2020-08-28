@@ -1,22 +1,27 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+export default {
+  Mutation: {
+    createAccount: async (_, args, { prisma }) => {
+      const { username, email, firstName = "", lastName = "", bio = "" } = args;
 
-export default{
-    Mutation : {
-        createAccount: async(_,args) =>{
-            const {userName, email, firstName="", lastName="", bio=""}=args;
-            
-            const user = await prisma.user.create({
-                data:{
-                    userName:userName, 
-                    email:email,
-                    firstName:firstName ,
-                    lastName:lastName,
-                    bio:bio
-                }
-            });
-
-            return user;
+      const exist = await prisma.user.findMany({
+        where: {
+          OR: [{ username }, { email }],
+        },
+      });
+      if (exist && exist.length > 0) {
+        if (exist.filter((user) => user.email == email).length > 0) {
+          throw Error("This email already taken");
+        } else if (
+          exist.filter((user) => user.username == username).length > 0
+        ) {
+          throw Error("This username already taken");
         }
-    }
-}
+      }
+
+      await prisma.user.create({
+        data: { username, email, firstName, lastName, bio },
+      });
+      return true;
+    },
+  },
+};
